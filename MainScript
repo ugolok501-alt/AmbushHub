@@ -1,0 +1,257 @@
+--1
+local CG = game:GetService("CoreGui")
+local TS = game:GetService("TweenService")
+_G.AmbushState = {
+    Visible = true, SpeedHack = false, WalkSpeedValue = 16, Noclip = false, Fly = false, FlySpeedValue = 25,
+    FullBright = false, FOVValue = 70, MasterESP = false, ESP_Doors = true, ESP_Keys = true, ESP_Levers = true, ESP_Monsters = true,
+    Color_Doors = Color3.fromRGB(0, 255, 100), Color_Keys = Color3.fromRGB(255, 215, 0), Color_Levers = Color3.fromRGB(0, 200, 255), Color_Monsters = Color3.fromRGB(255, 50, 50),
+    AssetLoadComplete = false
+}
+task.spawn(function()
+    if makefolder and writefile then
+        pcall(function()
+            if not isfolder("AmbushHub") then makefolder("AmbushHub") end
+            if not isfolder("AmbushHub/Doors") then makefolder("AmbushHub/Doors") end
+            if not isfolder("AmbushHub/Doors/Sounds") then makefolder("AmbushHub/Doors/Sounds") end
+            local sPath = "AmbushHub/Doors/Sounds/nofiticationambushhub.mp3"
+            local Sc = Instance.new("ScreenGui", CG); Sc.Name = "AmbushAssetLoader"
+            local Fr = Instance.new("Frame", Sc); Fr.Size = UDim2.new(0, 280, 0, 90); Fr.Position = UDim2.new(0.5, -140, 0.4, -45); Fr.BackgroundColor3 = Color3.fromRGB(12, 18, 12); Instance.new("UICorner", Fr)
+            local Tl = Instance.new("TextLabel", Fr); Tl.Size = UDim2.new(1, 0, 0, 35); Tl.Text = "Скачиваем ассеты..."; Tl.TextColor3 = Color3.fromRGB(0, 255, 120); Tl.Font = Enum.Font.SourceSansBold; Tl.TextSize = 16; Tl.BackgroundTransparency = 1
+            local Sb = Instance.new("TextLabel", Fr); Sb.Size = UDim2.new(1, 0, 0, 20); Sb.Position = UDim2.new(0, 0, 0, 30); Sb.Text = "Вы уже налили чай?"; Sb.TextColor3 = Color3.fromRGB(130, 160, 130); Sb.Font = Enum.Font.SourceSansItalic; Sb.TextSize = 13; Sb.BackgroundTransparency = 1
+            local Bg = Instance.new("Frame", Fr); Bg.Size = UDim2.new(1, -40, 0, 5); Bg.Position = UDim2.new(0, 20, 0, 65); Bg.BackgroundColor3 = Color3.fromRGB(20, 30, 20); Bg.BorderSizePixel = 0; Instance.new("UICorner", Bg)
+            local Bar = Instance.new("Frame", Bg); Bar.Size = UDim2.new(0, 0, 1, 0); Bar.BackgroundColor3 = Color3.fromRGB(0, 255, 120); Bar.BorderSizePixel = 0; Instance.new("UICorner", Bar)
+            local t = TS:Create(Bar, TweenInfo.new(2.5, Enum.EasingStyle.Linear), {Size = UDim2.new(1, 0, 1, 0)}); t:Play()
+            if not isfile(sPath) then
+                local data = game:HttpGet("https://github.com")
+                if data and #data > 0 then writefile(sPath, data) end
+            end
+            t.Completed:Connect(function() Sc:Destroy(); _G.AmbushState.AssetLoadComplete = true end)
+        end)
+    else
+        _G.AmbushState.AssetLoadComplete = true
+    end
+end)
+_G.CreateAmbushLoadScreen = function(title, sub, tm)
+    local Sc = Instance.new("ScreenGui", CG); Sc.Name = "AmbushLoader"
+    local Fr = Instance.new("Frame", Sc); Fr.Size = UDim2.new(0, 260, 0, 80); Fr.Position = UDim2.new(0.5, -130, 0.4, -40); Fr.BackgroundColor3 = Color3.fromRGB(15, 22, 15); Instance.new("UICorner", Fr)
+    local St = Instance.new("UIStroke", Fr); St.Color = Color3.fromRGB(35, 70, 35)
+    local Tl = Instance.new("TextLabel", Fr); Tl.Size = UDim2.new(1, 0, 0, 30); Tl.Text = title; Tl.TextColor3 = Color3.fromRGB(0, 255, 120); Tl.Font = Enum.Font.SourceSansBold; Tl.TextSize = 14; Tl.BackgroundTransparency = 1
+    local Sb = Instance.new("TextLabel", Fr); Sb.Size = UDim2.new(1, 0, 0, 20); Sb.Position = UDim2.new(0, 0, 0, 25); Sb.Text = sub; Sb.TextColor3 = Color3.fromRGB(130, 150, 130); Sb.Font = Enum.Font.SourceSansItalic; Sb.TextSize = 12; Sb.BackgroundTransparency = 1
+    local Bg = Instance.new("Frame", Fr); Bg.Size = UDim2.new(1, -30, 0, 4); Bg.Position = UDim2.new(0, 15, 0, 55); Bg.BackgroundColor3 = Color3.fromRGB(25, 30, 25); Bg.BorderSizePixel = 0
+    local Bar = Instance.new("Frame", Bg); Bar.Size = UDim2.new(0, 0, 1, 0); Bar.BackgroundColor3 = Color3.fromRGB(0, 255, 120); Bar.BorderSizePixel = 0; Instance.new("UICorner", Bar)
+    local tw = TS:Create(Bar, TweenInfo.new(tm, Enum.EasingStyle.Linear), {Size = UDim2.new(1, 0, 1, 0)}); tw:Play()
+    tw.Completed:Connect(function() Sc:Destroy() end)
+end
+--2
+local CG = game:GetService("CoreGui"); local TS = game:GetService("TweenService"); local W = game:GetService("Workspace"); local LP = game:GetService("Players").LocalPlayer
+if not _G.AmbushState then warn("Part 1 Missing!") return end
+local customSoundAsset = nil
+pcall(function()
+    local path = "AmbushHub/Doors/Sounds/nofiticationambushhub.mp3"
+    if isfile and isfile(path) and #readfile(path) > 0 then customSoundAsset = getcustomasset(path) end
+end)
+_G.ShowAmbushNotification = function(msg)
+    task.spawn(function()
+        local SG = Instance.new("ScreenGui", CG); SG.Name = "AmbushNotification"
+        local F = Instance.new("Frame", SG); F.Size = UDim2.new(0, 0, 0, 50); F.Position = UDim2.new(0.5, 0, 0.05, 0); F.BackgroundColor3 = Color3.fromRGB(20, 40, 15); F.BorderSizePixel = 0; F.ClipsDescendants = true; Instance.new("UICorner", F)
+        local L = Instance.new("TextLabel", F); L.Size = UDim2.new(1, -30, 1, -6); L.Position = UDim2.new(0, 15, 0, 0); L.BackgroundTransparency = 1; L.Text = msg; L.TextColor3 = Color3.fromRGB(150, 255, 100); L.Font = Enum.Font.SourceSansBold; L.TextSize = 14
+        local Ln = Instance.new("Frame", F); Ln.Size = UDim2.new(1, 0, 0, 4); Ln.Position = UDim2.new(0, 0, 1, -4); Ln.BackgroundColor3 = Color3.fromRGB(0, 255, 120); Ln.BorderSizePixel = 0
+        if customSoundAsset then local s = Instance.new("Sound", game:GetService("SoundService")); s.SoundId = customSoundAsset; s.Volume = 1; s:Play(); game:GetService("Debris"):AddItem(s, 5) end
+        TS:Create(F, TweenInfo.new(0.4, Enum.EasingStyle.Quad), {Size = UDim2.new(0, 380, 0, 50), Position = UDim2.new(0.5, -190, 0.05, 0)}):Play()
+        local lT = TS:Create(Ln, TweenInfo.new(4, Enum.EasingStyle.Linear), {Size = UDim2.new(0, 0, 0, 4)}); lT:Play()
+        local function hide() lT:Cancel(); local hT = TS:Create(F, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {Size = UDim2.new(0, 0, 0, 50), Position = UDim2.new(0.5, 0, 0.05, 0)}); hT:Play(); hT.Completed:Connect(function() SG:Destroy() end) end
+        F.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then hide() end end)
+        lT.Completed:Connect(function() if F and F.Parent then hide() end end)
+    end)
+end
+
+local function applyVisualESP(obj, col, txt)
+    if not obj or obj:FindFirstChild("XenoBillboard") then return end
+    local p = obj:IsA("BasePart") and obj or obj:FindFirstChildWhichIsA("BasePart", true)
+    if not p or p.Name:match("Wall") or p.Name:match("Desk") or p.Name:match("Floor") then return end
+    
+    local hl = Instance.new("Highlight", p)
+    hl.Name = "XenoHighlight"; hl.FillColor = col; hl.OutlineColor = Color3.fromRGB(255, 255, 255)
+    hl.FillTransparency = 0.4; hl.OutlineTransparency = 0.1; hl.Adornee = p
+    
+    local bb = Instance.new("BillboardGui", p)
+    bb.Name = "XenoBillboard"; bb.Size = UDim2.new(0, 160, 0, 30); bb.AlwaysOnTop = true; bb.StudsOffset = Vector3.zero; bb.Adornee = p
+    
+    local lb = Instance.new("TextLabel", bb)
+    lb.Size = UDim2.new(1, 0, 1, 0); lb.BackgroundTransparency = 1; lb.Text = txt; lb.TextColor3 = col; lb.TextSize = 14; lb.Font = Enum.Font.SourceSansBold; lb.TextStrokeTransparency = 0.2
+    lb.TextXAlignment = Enum.TextXAlignment.Center; lb.TextYAlignment = Enum.TextYAlignment.Center; lb.Parent = bb
+end
+
+local function checkObjectESP(child)
+    if not _G.AmbushState.MasterESP then return end
+    
+    if _G.AmbushState.ESP_Doors and child.Name == "Door" and child:IsA("Model") then 
+        local dT = child:FindFirstChild("Door") or child:FindFirstChildOfClass("BasePart")
+        if dT then applyVisualESP(dT, _G.AmbushState.Color_Doors, "Door") end
+    end
+    if _G.AmbushState.ESP_Keys and (child.Name == "Key" or child.Name == "KeyModel" or child.Name == "LiveHintBook") then 
+        local espText = (child.Name == "LiveHintBook") and "Book" or "Key"
+        applyVisualESP(child, _G.AmbushState.Color_Keys, espText) 
+    end
+    if _G.AmbushState.ESP_Levers and (child.Name == "LeverForGate" or child.Name == "LeverSwitch") then 
+        applyVisualESP(child, _G.AmbushState.Color_Levers, "Lever") 
+    end
+    
+    -- ПРОСТОЙ КЛАССИЧЕСКИЙ ДЕТЕКТ МОНСТРОВ НА МОДЕЛЬ ЦЕЛИКОМ (БЕЗ КОСТЕЙ И КОНЕЧНОСТЕЙ)
+    if _G.AmbushState.ESP_Monsters and child:IsA("Model") then
+        if child.Name == "RushMoving" then applyVisualESP(child, _G.AmbushState.Color_Monsters, "RUSH")
+        elseif child.Name == "AmbushMoving" then applyVisualESP(child, _G.AmbushState.Color_Monsters, "AMBUSH")
+        elseif child.Name == "SeekMoving" or child.Name == "Seek" then applyVisualESP(child, _G.AmbushState.Color_Monsters, "SEEK")
+        elseif child.Name == "FigureModels" or child.Name == "Figure" or child.Name == "FigureModel" then applyVisualESP(child, _G.AmbushState.Color_Monsters, "FIGURE")
+        end
+    end
+end
+
+W.DescendantAdded:Connect(function(child) 
+    task.wait(0.05)
+    if _G.AmbushState.ESP_Monsters then
+        if child.Name == "RushMoving" then _G.ShowAmbushNotification("Rush spawned!")
+        elseif child.Name == "AmbushMoving" then _G.ShowAmbushNotification("Ambush spawned!") 
+        end
+    end
+    checkObjectESP(child) 
+end)
+
+task.spawn(function()
+    while task.wait(6.0) do
+        if not _G.AmbushState.MasterESP then
+            for _, o in pairs(W:GetDescendants()) do if o.Name == "XenoHighlight" or o.Name == "XenoBillboard" then o:Destroy() end end
+        else
+            for _, child in pairs(W:GetDescendants()) do checkObjectESP(child) end
+        end
+    end
+end)
+
+--3
+local LP = game:GetService("Players").LocalPlayer; local RS = game:GetService("RunService"); local W = game:GetService("Workspace"); local UIS = game:GetService("UserInputService"); local Ltg = game:GetService("Lighting")
+if not _G.AmbushState then warn("Part 1 Missing!") return end
+
+RS.RenderStepped:Connect(function()
+    local Cam = W.CurrentCamera
+    if Cam then Cam.FieldOfView = _G.AmbushState.FOVValue end
+end)
+
+RS.Heartbeat:Connect(function()
+    local Ch = LP.Character; local HRP = Ch and Ch:FindFirstChild("HumanoidRootPart"); local Hum = Ch and Ch:FindFirstChildOfClass("Humanoid")
+    if not HRP or not Hum then return end
+    if _G.AmbushState.SpeedHack then
+        Hum.WalkSpeed = 0
+        if Hum.MoveDirection.Magnitude > 0 and not _G.AmbushState.Fly then 
+            local finalSpeed = _G.AmbushState.WalkSpeedValue
+            local isFigureRoom = W:FindFirstChild("FigureModels") or W:FindFirstChild("Figure") or W:FindFirstChild("FigureModel")
+            if isFigureRoom then finalSpeed = math.min(finalSpeed, 30) end
+            HRP.CFrame = HRP.CFrame + (Hum.MoveDirection.Unit * (finalSpeed * (1/60))) 
+        end
+    else
+        if not _G.AmbushState.Fly then Hum.WalkSpeed = 16 end
+    end
+end)
+
+RS.Stepped:Connect(function()
+    local Ch = LP.Character; local HRP = Ch and Ch:FindFirstChild("HumanoidRootPart"); local Cam = W.CurrentCamera; if not HRP or not Ch then return end
+    if _G.AmbushState.Noclip then for _, p in pairs(Ch:GetDescendants()) do if p:IsA("BasePart") then p.CanCollide = false end end end
+    if _G.AmbushState.FullBright then Ltg.Ambient = Color3.fromRGB(255, 255, 255); Ltg.OutdoorAmbient = Color3.fromRGB(255, 255, 255); Ltg.Brightness = 1.5 end
+    if _G.AmbushState.Fly then
+        HRP.Velocity = Vector3.zero; local dir = Vector3.zero
+        if UIS:IsKeyDown(Enum.KeyCode.W) then dir = dir + Cam.CFrame.LookVector end; if UIS:IsKeyDown(Enum.KeyCode.S) then dir = dir - Cam.CFrame.LookVector end
+        if UIS:IsKeyDown(Enum.KeyCode.A) then dir = dir - Cam.CFrame.RightVector end; if UIS:IsKeyDown(Enum.KeyCode.D) then dir = dir + Cam.CFrame.RightVector end
+        if UIS:IsKeyDown(Enum.KeyCode.Space) then dir = dir + Vector3.new(0,1,0) end; if UIS:IsKeyDown(Enum.KeyCode.LeftShift) then dir = dir - Vector3.new(0,1,0) end
+        if dir.Magnitude > 0 then HRP.CFrame = HRP.CFrame + (dir.Unit * (_G.AmbushState.FlySpeedValue / 45)) end
+    end
+end)
+--4
+local CG = game:GetService("CoreGui"); local UIS = game:GetService("UserInputService")
+if not _G.AmbushState then warn("Part 1 Missing!") return end
+if CG:FindFirstChild("AmbushHub") then CG.AmbushHub:Destroy() end
+_G.MG = Instance.new("ScreenGui", CG); _G.MG.Name = "AmbushHub"; _G.MG.ResetOnSpawn = false
+_G.MF = Instance.new("Frame", _G.MG); _G.MF.Name = "MainFrame"; _G.MF.Size = UDim2.new(0, 380, 0, 240); _G.MF.Position = UDim2.new(0.5, -190, 0.5, -120); _G.MF.BackgroundColor3 = Color3.fromRGB(15, 18, 15); _G.MF.BorderSizePixel = 0; _G.MF.Active = true; _G.MF.Draggable = true; _G.MF.Visible = false; Instance.new("UICorner", _G.MF).CornerRadius = UDim.new(0, 8); local MS = Instance.new("UIStroke", _G.MF); MS.Thickness = 1.2; MS.Color = Color3.fromRGB(30, 50, 30)
+local Hd = Instance.new("Frame", _G.MF); Hd.Size = UDim2.new(1, 0, 0, 32); Hd.BackgroundTransparency = 1
+local Tl = Instance.new("TextLabel", Hd); Tl.Size = UDim2.new(0.5, 0, 1, 0); Tl.Position = UDim2.new(0, 12, 0, 0); Tl.Text = "Ambush Hub"; Tl.TextColor3 = Color3.fromRGB(0, 255, 120); Tl.Font = Enum.Font.SourceSansBold; Tl.TextSize = 15; Tl.TextXAlignment = Enum.TextXAlignment.Left; Tl.BackgroundTransparency = 1
+_G.TF = Instance.new("Frame", _G.MF); _G.TF.Size = UDim2.new(0, 95, 1, -42); _G.TF.Position = UDim2.new(0, 8, 0, 34); _G.TF.BackgroundColor3 = Color3.fromRGB(10, 12, 10); Instance.new("UICorner", _G.TF).CornerRadius = UDim.new(0, 5)
+_G.CF = Instance.new("Frame", _G.MF); _G.CF.Size = UDim2.new(1, -116, 1, -42); _G.CF.Position = UDim2.new(0, 108, 0, 34); _G.CF.BackgroundTransparency = 1
+_G.MT = Instance.new("ScrollingFrame", _G.CF); _G.MT.Size = UDim2.new(1, 0, 1, 0); _G.MT.BackgroundTransparency = 1; _G.MT.CanvasSize = UDim2.new(0,0,0,260); _G.MT.ScrollBarThickness = 1
+_G.VT = Instance.new("ScrollingFrame", _G.CF); _G.VT.Size = UDim2.new(1, 0, 1, 0); _G.VT.BackgroundTransparency = 1; _G.VT.CanvasSize = UDim2.new(0,0,0,220); _G.VT.ScrollBarThickness = 1; _G.VT.Visible = false
+_G.ET = Instance.new("ScrollingFrame", _G.CF); _G.ET.Size = UDim2.new(1, 0, 1, 0); _G.ET.BackgroundTransparency = 1; _G.ET.CanvasSize = UDim2.new(0,0,0,260); _G.ET.ScrollBarThickness = 1; _G.ET.Visible = false
+_G.cTB = function(t, y, a) local b = Instance.new("TextButton", _G.TF); b.Size = UDim2.new(1, -8, 0, 24); b.Position = UDim2.new(0, 4, 0, y); b.BackgroundColor3 = a and Color3.fromRGB(25, 45, 25) or Color3.fromRGB(16, 18, 16); b.Text = t; b.TextColor3 = a and Color3.fromRGB(255,255,255) or Color3.fromRGB(140,140,140); b.Font = Enum.Font.SourceSansBold; b.TextSize = 12; Instance.new("UICorner", b).CornerRadius = UDim.new(0, 4); return b end
+_G.cTg = function(p, t, y, s, k)
+    local f = Instance.new("Frame", p); f.Size = UDim2.new(1, -6, 0, 28); f.Position = UDim2.new(0, 0, 0, y); f.BackgroundColor3 = Color3.fromRGB(18, 22, 18); Instance.new("UICorner", f).CornerRadius = UDim.new(0, 4)
+    local lb = Instance.new("TextLabel", f); lb.Size = UDim2.new(0.7, 0, 1, 0); lb.Position = UDim2.new(0, 8, 0, 0); lb.Text = t; lb.TextColor3 = Color3.fromRGB(190, 200, 190); lb.Font = Enum.Font.SourceSans; lb.TextSize = 13; lb.TextXAlignment = Enum.TextXAlignment.Left; lb.BackgroundTransparency = 1
+    local bn = Instance.new("TextButton", f); bn.Size = UDim2.new(0, 40, 0, 18); bn.Position = UDim2.new(1, -45, 0.5, -9); bn.BackgroundColor3 = s and Color3.fromRGB(0, 140, 60) or Color3.fromRGB(40, 42, 40); bn.Text = s and "ON" or "OFF"; bn.TextColor3 = Color3.fromRGB(255,255,255); bn.Font = Enum.Font.SourceSansBold; bn.TextSize = 11; Instance.new("UICorner", bn).CornerRadius = UDim.new(0, 3)
+    bn.MouseButton1Click:Connect(function() _G.AmbushState[k] = not _G.AmbushState[k]; local c = _G.AmbushState[k]; bn.Text = c and "ON" or "OFF"; bn.BackgroundColor3 = c and Color3.fromRGB(0, 140, 60) or Color3.fromRGB(40, 42, 40) end)
+end
+_G.cSt = function(p, t, y, mn, mx, s, k)
+    local f = Instance.new("Frame", p); f.Size = UDim2.new(1, -6, 0, 35); f.Position = UDim2.new(0, 0, 0, y); f.BackgroundTransparency = 1
+    local lb = Instance.new("TextLabel", f); lb.Size = UDim2.new(0.5, 0, 0, 16); lb.Position = UDim2.new(0, 6, 0, 0); lb.Text = t; lb.TextColor3 = Color3.fromRGB(140, 150, 140); lb.Font = Enum.Font.SourceSans; lb.TextSize = 12; lb.TextXAlignment = Enum.TextXAlignment.Left; lb.BackgroundTransparency = 1
+    local vL = Instance.new("TextLabel", f); vL.Size = UDim2.new(0, 35, 0, 16); vL.Position = UDim2.new(1, -40, 0, 0); vL.Text = tostring(s); vL.TextColor3 = Color3.fromRGB(0,255,120); vL.Font = Enum.Font.SourceSansBold; vL.TextSize = 12; vL.TextXAlignment = Enum.TextXAlignment.Right; vL.BackgroundTransparency = 1
+    local sB = Instance.new("TextButton", f); sB.Size = UDim2.new(1, -12, 0, 4); sB.Position = UDim2.new(0, 6, 0, 22); sB.BackgroundColor3 = Color3.fromRGB(30, 35, 30); sB.Text = ""; sB.BorderSizePixel = 0; Instance.new("UICorner", sB)
+    local fil = Instance.new("Frame", sB); fil.Size = UDim2.new((s - mn)/(mx - mn), 0, 1, 0); fil.BackgroundColor3 = Color3.fromRGB(0, 200, 100); fil.BorderSizePixel = 0; Instance.new("UICorner", fil)
+    local hnd = Instance.new("Frame", sB); hnd.Size = UDim2.new(0, 8, 0, 8); hnd.Position = UDim2.new((s - mn)/(mx - mn), -4, 0.5, -4); hnd.BackgroundColor3 = Color3.fromRGB(255,255,255); hnd.BorderSizePixel = 0; Instance.new("UICorner", hnd)
+    local active = false
+    local function update(input)
+        local pct = math.clamp((input.Position.X - sB.AbsolutePosition.X) / sB.AbsoluteSize.X, 0, 1)
+        local val = math.floor(mn + (mx - mn) * pct)
+        _G.AmbushState[k] = val; vL.Text = tostring(val)
+        fil.Size = UDim2.new(pct, 0, 1, 0); hnd.Position = UDim2.new(pct, -4, 0.5, -4)
+    end
+    sB.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then active = true; update(i) end end)
+    UIS.InputChanged:Connect(function(i) if active and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then update(i) end end)
+    UIS.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then active = false end end)
+end
+--5
+local UIS = game:GetService("UserInputService"); local W = game:GetService("Workspace"); local CG = game:GetService("CoreGui")
+if not _G.AmbushState or not _G.MT then warn("Part 4 Missing!") return end
+task.spawn(function()
+    while not _G.AmbushState.AssetLoadComplete do task.wait(0.1) end
+    _G.CreateAmbushLoadScreen("Part 5/5: Interface", "Launching Clean Hub...", 1.0)
+    local mB = _G.cTB("Main", 6, true); local vB = _G.cTB("Visuals", 32, false); local eB = _G.cTB("ESP", 58, false)
+    local function swT(tT, tB) for _, t in pairs({_G.MT, _G.VT, _G.ET}) do t.Visible = (t == tT) end; for _, b in pairs({mB, vB, eB}) do b.BackgroundColor3 = (b == tB) and Color3.fromRGB(25, 45, 25) or Color3.fromRGB(16, 18, 16); b.TextColor3 = (b == tB) and Color3.fromRGB(255,255,255) or Color3.fromRGB(140,140,140) end end
+    mB.MouseButton1Click:Connect(function() swT(_G.MT, mB) end); vB.MouseButton1Click:Connect(function() swT(_G.VT, vB) end); eB.MouseButton1Click:Connect(function() swT(_G.ET, eB) end)
+    
+    _G.cTg(_G.MT, "Speedhack", 5, _G.AmbushState.SpeedHack, "SpeedHack")
+    _G.cSt(_G.MT, "Value", 36, 1, 100, 16, "WalkSpeedValue")
+    _G.cTg(_G.MT, "Noclip", 76, _G.AmbushState.Noclip, "Noclip")
+    _G.cTg(_G.MT, "Fly", 108, _G.AmbushState.Fly, "Fly")
+    _G.cSt(_G.MT, "Value", 138, 10, 100, _G.AmbushState.FlySpeedValue, "FlySpeedValue")
+    
+    _G.cTg(_G.VT, "No dark", 5, _G.AmbushState.FullBright, "FullBright")
+    _G.cSt(_G.VT, "FOV", 36, 30, 120, _G.AmbushState.FOVValue, "FOVValue")
+    
+    _G.cTg(_G.ET, "ESP master", 5, _G.AmbushState.MasterESP, "MasterESP")
+    local Dp = Instance.new("Frame", _G.ET); Dp.Size = UDim2.new(1, -6, 0, 130); Dp.Position = UDim2.new(0, 0, 0, 38); Dp.BackgroundTransparency = 1
+    _G.cTg(Dp, "• Doors", 0, _G.AmbushState.ESP_Doors, "ESP_Doors")
+    _G.cTg(Dp, "• Keys", 32, _G.AmbushState.ESP_Keys, "ESP_Keys")
+    _G.cTg(Dp, "• Levers", 64, _G.AmbushState.ESP_Levers, "ESP_Levers")
+    _G.cTg(Dp, "• Monsters", 96, _G.AmbushState.ESP_Monsters, "ESP_Monsters")
+    
+    _G.MF.Visible = true
+    UIS.ModalEnabled = true
+    _G.ShowAmbushNotification("Ambush Hub Ready!")
+end)
+
+UIS.InputBegan:Connect(function(input, gpe)
+    if gpe then return end
+    if input.KeyCode == Enum.KeyCode.RightShift then
+        if _G.MF then
+            _G.AmbushState.Visible = not _G.AmbushState.Visible
+            _G.MF.Visible = _G.AmbushState.Visible
+            
+            -- ЖЕСТКИЙ ФИКС: Если меню закрыто, мы полностью отключаем Modal, освобождая камеру
+            if not _G.AmbushState.Visible then
+                UIS.ModalEnabled = false
+                game:GetService("GuiService").SelectedObject = nil
+            else
+                UIS.ModalEnabled = true
+            end
+        end
+    elseif input.KeyCode == Enum.KeyCode.RightControl then
+        _G.AmbushState.SpeedHack = false; _G.AmbushState.Noclip = false; _G.AmbushState.Fly = false; _G.AmbushState.MasterESP = false; _G.AmbushState.FullBright = false
+        if _G.MG then _G.MG:Destroy() end
+        UIS.ModalEnabled = false
+        if _G.ShowAmbushNotification then _G.ShowAmbushNotification("Ambush Hub Terminated!") end
+    end
+end)
